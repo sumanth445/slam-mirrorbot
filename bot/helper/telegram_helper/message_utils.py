@@ -1,7 +1,7 @@
 from telegram import InlineKeyboardMarkup
 from telegram.message import Message
 from telegram.update import Update
-import psutil, shutil
+import psutil
 import time
 from bot import AUTO_DELETE_MESSAGE_DURATION, LOGGER, bot, \
     status_reply_dict, status_reply_dict_lock, download_dict, download_dict_lock
@@ -67,13 +67,10 @@ def delete_all_messages():
 
 
 def update_all_messages():
-    total, used, free = shutil.disk_usage('.')
-    used = get_readable_file_size(used)
-    free = get_readable_file_size(free)
     msg = get_readable_message()
-    msg += f"<b>CPU:</b> {psutil.cpu_percent()}%" \
-           f" <b>RAM:</b> {psutil.virtual_memory().percent}%" \
-           f" <b>DISK:</b> {psutil.disk_usage('/').percent}%"
+    msg += f"<b>CPU:</b> {psutil.cpu_percent()}%\n" \
+           f"<b>RAM:</b> {psutil.virtual_memory().percent}%\n" \
+           f"<b>DISK:</b> {psutil.disk_usage('/').percent}%\n"
     with download_dict_lock:
         dlspeed_bytes = 0
         uldl_bytes = 0
@@ -91,7 +88,7 @@ def update_all_messages():
                     uldl_bytes += float(speedy.split('M')[0]) * 1048576
         dlspeed = get_readable_file_size(dlspeed_bytes)
         ulspeed = get_readable_file_size(uldl_bytes)
-        msg += f"\n<b>USED:</b> {used} | <b>FREE:</b> {free}\n<b>DL:</b> {dlspeed}ps 🔻 | <b>UL:</b> {ulspeed}ps 🔺\n"
+        msg += f"\n<b>DL:</b> {dlspeed}ps 🔻| <b>UL:</b> {ulspeed}ps 🔺\n"
     with status_reply_dict_lock:
         for chat_id in list(status_reply_dict.keys()):
             if status_reply_dict[chat_id] and msg != status_reply_dict[chat_id].text:
@@ -105,13 +102,10 @@ def update_all_messages():
 
 
 def sendStatusMessage(msg, bot):
-    total, used, free = shutil.disk_usage('.')
-    used = get_readable_file_size(used)
-    free = get_readable_file_size(free)
     progress = get_readable_message()
-    progress += f"<b>CPU:</b> {psutil.cpu_percent()}%" \
-           f" <b>RAM:</b> {psutil.virtual_memory().percent}%" \
-           f" <b>DISK:</b> {psutil.disk_usage('/').percent}%"
+    progress += f"<b>CPU:</b> {psutil.cpu_percent()}%\n" \
+           f"<b>RAM:</b> {psutil.virtual_memory().percent}%\n" \
+           f"<b>DISK:</b> {psutil.disk_usage('/').percent}%\n"
     with download_dict_lock:
         dlspeed_bytes = 0
         uldl_bytes = 0
@@ -129,7 +123,7 @@ def sendStatusMessage(msg, bot):
                     uldl_bytes += float(speedy.split('M')[0]) * 1048576
         dlspeed = get_readable_file_size(dlspeed_bytes)
         ulspeed = get_readable_file_size(uldl_bytes)
-        progress += f"\n<b>USED:</b> {used} | <b>FREE:</b> {free}\n<b>DL:</b> {dlspeed}ps 🔻 | <b>UL:</b> {ulspeed}ps 🔺\n"
+        progress += f"\n<b>DL: </b>{dlspeed}ps 🔻| <b>UL: </b>{ulspeed}ps 🔺\n"
     with status_reply_dict_lock:
         if msg.message.chat.id in list(status_reply_dict.keys()):
             try:
@@ -139,5 +133,8 @@ def sendStatusMessage(msg, bot):
             except Exception as e:
                 LOGGER.error(str(e))
                 del status_reply_dict[msg.message.chat.id]
+                pass
+        if len(progress) == 0:
+            progress = "Starting DL"
         message = sendMessage(progress, bot, msg)
         status_reply_dict[msg.message.chat.id] = message
